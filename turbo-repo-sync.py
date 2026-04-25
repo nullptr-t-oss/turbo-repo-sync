@@ -4,6 +4,7 @@ import re
 import subprocess
 import concurrent.futures
 import urllib.request
+import time
 
 MANIFEST_INPUT = os.getenv('MANIFEST_FILE', '.repo/manifests/default.xml')
 DEST_DIR = os.getenv('DEST_DIR', '.')
@@ -147,4 +148,19 @@ def main():
             executor.submit(extract_project, *task)
 
 if __name__ == "__main__":
+    start_time = time.time()
+
     main()
+
+    end_time = time.time()
+    elapsed_seconds = int(end_time - start_time)
+
+    minutes = elapsed_seconds // 60
+    seconds = elapsed_seconds % 60
+
+    if minutes > 0:
+        time_str = f"{minutes}m {seconds}s"
+    else:
+        time_str = f"{seconds}s"
+
+    print(f"\n[DEBUG] Repo sync completed in {time_str}")
