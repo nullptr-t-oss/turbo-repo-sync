@@ -151,6 +151,8 @@ def main():
         '-j', '8',
         '-x', '16',
         '-s', '16',
+        '-k', '1M',
+        '--allow-overwrite=true',
         '--console-log-level=error',
         '--summary-interval=0',
         '--file-allocation=none',
