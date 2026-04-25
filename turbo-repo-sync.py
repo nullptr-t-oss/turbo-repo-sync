@@ -6,9 +6,9 @@ import concurrent.futures
 import urllib.request
 import time
 
-MANIFEST_INPUT = os.getenv('MANIFEST_FILE', '.repo/manifests/default.xml')
-DEST_DIR = os.getenv('DEST_DIR', '.')
-PROJECT_OVERRIDES_STR = os.getenv('PROJECT_OVERRIDES', '')
+MANIFEST_INPUT = os.path.expandvars(os.getenv('MANIFEST_FILE', '.repo/manifests/default.xml'))
+DEST_DIR = os.path.expandvars(os.getenv('DEST_DIR', '.'))
+PROJECT_OVERRIDES_STR = os.path.expandvars(os.getenv('PROJECT_OVERRIDES', ''))
 INPUT_FILE = '/tmp/aria2_input.txt'
 
 def is_hash(revision):
