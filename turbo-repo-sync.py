@@ -132,6 +132,10 @@ def main():
             f.write(f"  dir=/tmp\n")
             f.write(f"  out={zip_name}\n")
 
+            if "git.codelinaro.org" in base_url:
+                f.write("  split=1\n")
+                f.write("  max-connection-per-server=1\n")
+
             # Extract linkfiles and copyfiles
             linkfiles = [(link.get('src'), link.get('dest')) for link in project.findall('linkfile')]
             copyfiles = [(copy.get('src'), copy.get('dest')) for copy in project.findall('copyfile')]
