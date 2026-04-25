@@ -10,6 +10,10 @@ inputs:
     description: 'The root directory where projects should be extracted'
     required: true
     default: '.'
+  project_overrides:
+    description: 'Comma separated list of path=revision overrides (e.g. kernel_platform/common=my-branch,./=test-commit)'
+    required: false
+    default: ''
 
 runs:
   using: "composite"
@@ -32,5 +36,6 @@ runs:
       env:
         MANIFEST_FILE: ${{ inputs.manifest_path }}
         DEST_DIR: ${{ inputs.workspace_dir }}
+        PROJECT_OVERRIDES: ${{ inputs.project_overrides }}
       run: |
         python ${{ github.action_path }}/turbo-repo-sync.py

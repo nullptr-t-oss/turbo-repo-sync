@@ -8,6 +8,7 @@ import time
 
 MANIFEST_INPUT = os.getenv('MANIFEST_FILE', '.repo/manifests/default.xml')
 DEST_DIR = os.getenv('DEST_DIR', '.')
+PROJECT_OVERRIDES_STR = os.getenv('PROJECT_OVERRIDES', '')
 INPUT_FILE = '/tmp/aria2_input.txt'
 
 def is_hash(revision):
@@ -24,7 +25,7 @@ def extract_project(zip_name, target_path, linkfiles, copyfiles):
     try:
         os.makedirs(target_path, exist_ok=True)
 
-        # shopt -s dotglob ensures hidden files like .gitignore or .clang-format are moved
+        # shopt -s dotglob ensures hidden files are moved
         extract_cmd = f'bash -c "shopt -s dotglob && unzip -q {zip_path} -d {temp_ext} && mv {temp_ext}/*/* {target_path}/"'
         subprocess.run(extract_cmd, shell=True, check=True)
         print(f"Extracted -> {target_path}")
@@ -76,6 +77,14 @@ def main():
     default_remote = default_node.get('remote') if default_node is not None else None
     default_revision = default_node.get('revision', 'master')
 
+    # Parse the comma-separated overrides into a dictionary
+    overrides = {}
+    if PROJECT_OVERRIDES_STR:
+        for item in PROJECT_OVERRIDES_STR.replace('\n', ',').split(','):
+            if '=' in item:
+                k, v = item.split('=', 1)
+                overrides[k.strip()] = v.strip()
+
     extraction_tasks = []
 
     with open(INPUT_FILE, 'w') as f:
@@ -83,7 +92,15 @@ def main():
             name = project.get('name')
             path = project.get('path', name)
             remote_name = project.get('remote', default_remote)
-            revision = project.get('revision', default_revision).replace("refs/heads/", "")
+
+            revision = project.get('revision', default_revision)
+
+            # Apply dynamic override [Equivalent of git checkout] :)
+            if path in overrides and overrides[path]:
+                print(f"[OVERRIDE] Changing {path} revision to: {overrides[path]}")
+                revision = overrides[path]
+
+            revision = revision.replace("refs/heads/", "")
 
             base_url = remotes.get(remote_name)
             if not base_url:
