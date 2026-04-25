@@ -1,0 +1,36 @@
+name: 'Turbo Repo Sync'
+description: 'Parses an Android manifest.xml (local or URL) and downloads all projects via ZIP archives concurrently using aria2c.'
+author: "nullptr-t-oss <127822226+nullptr-t-oss@users.noreply.github.com>"
+inputs:
+  manifest_path:
+    description: 'Local path or HTTP/HTTPS URL to the manifest.xml file'
+    required: true
+    default: '.repo/manifests/default.xml'
+  workspace_dir:
+    description: 'The root directory where projects should be extracted'
+    required: true
+    default: '.'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Dependencies
+      shell: bash
+      run: |
+        if ! command -v aria2c &> /dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y aria2
+        fi
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Repo sync with aria2c
+      shell: bash
+      env:
+        MANIFEST_FILE: ${{ inputs.manifest_path }}
+        DEST_DIR: ${{ inputs.workspace_dir }}
+      run: |
+        python ${{ github.action_path }}/turbo-repo-sync.py
