@@ -163,7 +163,19 @@ def main():
         '--continue=true'
     ]
     print("Starting fast multi-threaded downloads...")
-    subprocess.run(aria2_cmd, check=True)
+
+    # Increase number of attempts in future??
+    for attempt in range(3):
+        try:
+            subprocess.run(aria2_cmd, check=True)
+            break
+        except subprocess.CalledProcessError as e:
+            if attempt < 2:
+                print(f"  [!] Network hiccup (Attempt {attempt + 1}/3). Retrying in 5 seconds...")
+                time.sleep(5)
+            else:
+                print("  [!] All download attempts failed.")
+                raise e
 
     print("Extracting archives...")
     with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
