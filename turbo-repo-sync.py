@@ -26,7 +26,7 @@ def extract_project(zip_name, target_path, linkfiles, copyfiles):
         os.makedirs(target_path, exist_ok=True)
 
         # shopt -s dotglob ensures hidden files are moved
-        extract_cmd = f'bash -c "shopt -s dotglob && unzip -q {zip_path} -d {temp_ext} && mv {temp_ext}/*/* {target_path}/"'
+        extract_cmd = f'bash -c "shopt -s dotglob && unzip -q {zip_path} -d {temp_ext} && rsync -aq {temp_ext}/*/* {target_path}/"'
         subprocess.run(extract_cmd, shell=True, check=True)
         print(f"Extracted -> {target_path}")
 
