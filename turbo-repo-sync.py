@@ -152,7 +152,7 @@ def main():
     aria2_cmd = [
         'aria2c',
         '-i', INPUT_FILE,
-        '-j', '8',
+        '-j', '16',
         '-x', '16',
         '-s', '16',
         '-k', '1M',
