@@ -14,19 +14,29 @@ INPUT_FILE = '/tmp/aria2_input.txt'
 def is_hash(revision):
     return bool(re.match(r'^[0-9a-f]{7,40}$', revision))
 
-def extract_project(zip_name, target_path, linkfiles, copyfiles):
-    zip_path = f"/tmp/{zip_name}"
-    temp_ext = f"/tmp/ext_{zip_name}"
+def extract_project(archive_name, target_path, linkfiles, copyfiles):
+    archive_path = f"/tmp/{archive_name}"
+    temp_ext = f"/tmp/ext_{archive_name}"
 
-    if not os.path.exists(zip_path):
-        print(f"Error: {zip_path} not found!")
+    if not os.path.exists(archive_path):
+        print(f"Error: {archive_path} not found!")
         return
 
     try:
         os.makedirs(target_path, exist_ok=True)
+        os.makedirs(temp_ext, exist_ok=True)
 
         # shopt -s dotglob ensures hidden files are moved
-        extract_cmd = f'bash -c "shopt -s dotglob && unzip -q {zip_path} -d {temp_ext} && rsync -aq {temp_ext}/*/* {target_path}/"'
+        if archive_path.endswith('.zip'):
+            # GitHub zips have a top-level wrapper folder, so we rsync from temp_ext/*/*
+            extract_cmd = f'bash -c "shopt -s dotglob && unzip -q {archive_path} -d {temp_ext} && rsync -aq {temp_ext}/*/* {target_path}/"'
+        elif archive_path.endswith('.tar.gz'):
+            # AOSP extracts files directly to the root, no wrapper directory, so we rsync from temp_ext/*
+            extract_cmd = f'bash -c "shopt -s dotglob && tar -xzf {archive_path} -C {temp_ext} && rsync -aq {temp_ext}/* {target_path}/"'
+        else:
+            print(f"Unsupported archive format: {archive_path}")
+            return
+
         subprocess.run(extract_cmd, shell=True, check=True)
         print(f"Extracted -> {target_path}")
 
@@ -52,9 +62,9 @@ def extract_project(zip_name, target_path, linkfiles, copyfiles):
             print(f"Linked {dest} -> {src_abs}")
 
     except subprocess.CalledProcessError as e:
-        print(f"Failed to extract/process {zip_name}: {e}")
+        print(f"Failed to extract/process {archive_name}: {e}")
     finally:
-        subprocess.run(f'rm -rf {zip_path} {temp_ext}', shell=True)
+        subprocess.run(f'rm -rf {archive_path} {temp_ext}', shell=True)
 
 def get_manifest_root(source):
     if source.startswith('http://') or source.startswith('https://'):
@@ -107,6 +117,7 @@ def main():
                 continue
 
             ref_type = "hash" if is_hash(revision) else "branch"
+            archive_ext = ".zip" # Default to zip
 
             # For now I've added only GitHub and Codelinaro coz I need only these two for OnePlus kernel builds
             # Codelinaro UI very similar to GitLab so same logic ??
@@ -122,15 +133,18 @@ def main():
                     download_url = f"{base_url}/{name}/-/archive/{revision}/{project_basename}-{revision}.zip?ref_type=heads"
                 else:
                     download_url = f"{base_url}/{name}/-/archive/{revision}/{project_basename}-{revision}.zip"
+            elif "android.googlesource.com" in base_url:
+                download_url = f"{base_url}/{name}/+archive/{revision}.tar.gz"
+                archive_ext = ".tar.gz"
             else:
                 continue
 
-            zip_name = f"{name.replace('/', '_')}.zip"
+            archive_name = f"{name.replace('/', '_')}{archive_ext}"
             target_path = os.path.join(DEST_DIR, path)
 
             f.write(f"{download_url}\n")
             f.write(f"  dir=/tmp\n")
-            f.write(f"  out={zip_name}\n")
+            f.write(f"  out={archive_name}\n")
 
             if "git.codelinaro.org" in base_url:
                 f.write("  split=1\n")
@@ -140,7 +154,7 @@ def main():
             linkfiles = [(link.get('src'), link.get('dest')) for link in project.findall('linkfile')]
             copyfiles = [(copy.get('src'), copy.get('dest')) for copy in project.findall('copyfile')]
 
-            extraction_tasks.append((zip_name, target_path, linkfiles, copyfiles))
+            extraction_tasks.append((archive_name, target_path, linkfiles, copyfiles))
 
     print(f"Prepared {len(extraction_tasks)} repositories for download.")
 
