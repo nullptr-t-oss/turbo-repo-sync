@@ -119,6 +119,23 @@ def main():
             ref_type = "hash" if is_hash(revision) else "branch"
             archive_ext = ".zip" # Default to zip
 
+            is_lfs = project.get('lfs') == 'true'
+            target_path = os.path.join(DEST_DIR, path)
+
+            if is_lfs:
+                clone_url = f"{base_url}/{name}.git"
+                print(f"[LFS BYPASS] Standard cloning {name} directly to resolve large files...")
+                # Can't think of any workaround for this one :(
+                subprocess.run(
+                    f"git clone --depth=1 -b {revision} {clone_url} {target_path}", 
+                    shell=True, check=True
+                )
+                subprocess.run(
+                    f"cd {target_path} && git lfs install && git lfs pull", 
+                    shell=True, check=True
+                )
+                continue
+
             # For now I've added only GitHub and Codelinaro coz I need only these two for OnePlus kernel builds
             # Codelinaro UI very similar to GitLab so same logic ??
             # TODO: Add GitLab
