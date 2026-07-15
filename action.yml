@@ -15,6 +15,10 @@ inputs:
     required: false
     default: ''
 
+branding:
+  icon: 'arrow-down-circle'
+  color: 'red'
+
 runs:
   using: "composite"
   steps:
